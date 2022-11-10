@@ -1,0 +1,5 @@
+Aaron - Underlying codebase, build actual board from input, agent function, build known 'memory' as dictionary from moves
+
+Shubham - Logic to take 'memory' dictionary and make 'prediction' dictionary of possible hazards
+
+Sagar - Takes both dictionaries as input and write code to output the logical moves for the agent to take
