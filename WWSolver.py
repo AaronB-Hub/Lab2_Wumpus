@@ -81,7 +81,9 @@ class WWSolver:
     print(self.world)
     print()
     self.printAgentMaps()
+    print("Known Map")
     print(self.agent.knowledge)
+    print("Predicted Map")
     print(self.agent.prediction)
     print()
 
@@ -90,36 +92,294 @@ class WWSolver:
 
      # Constructor of inner class
     def __init__(self, WWSolver):
-      self.position = [int(0), int(0)]
-      self.knowledge = {}
-      self.prediction = {}
-      print("Start!")
-      self.checkSquare(WWSolver.world)
+        truemap = copy.deepcopy(WWSolver.worldmap)
+        #print("LENGTH WorldMap" + str(len(truemap)))
+        self.last_moves = {}
+        self.predicted_moves = {}
+        self.knowledge = {}
+        self.prediction = {}
+        self.best_moves = {}
+        for j in range(len(truemap)):
+            for i in range(len(truemap[j])):
+                self.position = [int(j), int(i)] #The position of the cell is defined here.
+                self.predict = ''
+                self.right = True
+                self.left = True
+                self.up = True
+                self.down = True
+                self.gold = False
+                self.length_map = len(copy.deepcopy(WWSolver.worldmap))
+                print("Start!")
+                self.checkSquare(WWSolver.world)
+        print("Predicted Moves: \n" + str(self.predicted_moves))
+        print("Best Moves: \n" + str(self.best_moves))        
 
     # Methods of inner class
     def checkSquare(self, world):
-      x = self.position[0]
-      y = self.position[1]
-      key = (x,y)
-      if key in world:
-        features = world[(self.position[0],self.position[1])]
-        print("Features at " + str(x) + "," + str(y) + " are: " + features)
-        self.knowledge[(x,y)] = features
-      else:
-        print("No features at " + str(x) + "," + str(y))
+        x = self.position[0]
+        y = self.position[1]
+        key = (x,y)
+        print(key)
+        if key in world:
+            features = world[(self.position[0],self.position[1])]
+            if features == 'E':
+                print("The agent's current position is at " + str(x) + "," + str(y))
+                self.knowledge[(x,y)] = features
+                self.prediction[(x,y)] = features
+                #solver = WWSolver.printAgentMaps(self.WWSolver.worldmap)
+                
+                if x == 0 and y == 0:
+                    self.last_moves[(x,y)] = features
+                    self.predicted_moves[(x,y)] = features
+                    if (self.right):
+                        self.position[0] += 1
+                        self.start_moving(self.position[0], self.position[1], self.length_map, world)
+                    if (self.down):
+                        self.position[1] += 1
+                        self.start_moving(self.position[0], self.position[1], self.length_map, world)
+                elif x < self.length_map and y < self.length_map:
+                    self.start_moving(self.position[0], self.position[1], self.length_map, world)
+                        
+                #print("Predicted Moves: \n" + str(self.predicted_moves))
+                #print("Best Moves: \n" + str(self.best_moves))
+                    #print("last moves " + str(self.last_moves))    
+                        
+                    #elif features == 'P':
+                        
+                    #elif features == 'B/S':
+                        
+                    #elif features == 'W':
+                        
+                    #elif features == 'G/B':
+
+            else:
+                self.knowledge[(x,y)] = features
+                self.prediction[(x,y)] = features
+                #solver = WWSolver.printAgentMaps(self.WWSolver.worldmap)
+                
+                if x == 0 and y == 0:
+                    self.last_moves[(x,y)] = features
+                    self.predicted_moves[(x,y)] = features
+                    if (self.right):
+                        self.position[0] += 1
+                        self.start_moving(self.position[0], self.position[1], self.length_map, world)
+                    if (self.down):
+                        self.position[1] += 1
+                        self.start_moving(self.position[0], self.position[1], self.length_map, world)
+                elif x < self.length_map and y < self.length_map:
+                    self.start_moving(self.position[0], self.position[1], self.length_map, world)
+                        
+                
+                print("Features at " + str(x) + "," + str(y) + " are: " + features)
+                self.knowledge[(x,y)] = features
+                self.prediction[(x,y)] = features
+        else:
+            print("No features at " + str(x) + "," + str(y))
+
+        
 
     def moveRight(self, world):
-      self.position[0] += 1
-      self.checkSquare(world)
-
+        self.right = False
+        self.position[0] += 1
+        #self.checkSquare(world)
+    
     def moveLeft(self, world):
-      self.position[0] -= 1
-      self.checkSquare(world)
+        self.left = False
+        self.position[0] -= 1
+        #self.checkSquare(world)
     
     def moveUp(self, world):
-      self.position[1] += 1
-      self.checkSquare(world)
-
+        self.up = False
+        self.position[1] += 1
+        #self.checkSquare(world)
+    
     def moveDown(self, world):
-      self.position[1] -= 1
-      self.checkSquare(world)
+        self.down = False
+        self.position[1] -= 1
+        #self.checkSquare(world)
+        
+    def move(self, world):
+        if(self.right==False):
+            self.right = True
+            self.moveLeft(world)
+        elif(self.left==False):
+            self.left = True
+            self.moveRight(world)
+        elif(self.up==False):
+            self.up = True
+            self.MoveDown(world)
+        elif(self.down==False):
+            self.down = True
+            self.moveUp(world)
+            
+            
+    def start_moving(self, pos0, pos1, length_map, world):
+        key = (pos0, pos1)
+        if key in world:
+            features = world[(pos0,pos1)]
+            temp_xR = pos0 + 1# Right => +1
+            temp_xD = pos1 + 1# Down => +1
+            temp_xU = pos1 - 1# Up => -1
+            temp_xL = pos0 - 1# Left => -1
+            if features == '':
+                self.best_moves[(pos0,pos1)] = features
+            elif features == 'B':
+                self.predicted_moves[(pos0,pos1)] = features
+                self.best_moves[(pos0,pos1)] = features
+                if temp_xR < length_map and temp_xR >= 0:
+                    pos0 += 1
+                    temp_xR -= 1
+                    key = (pos0, pos1)
+                    if key in world:
+                        features = world[(pos0, pos1)]
+                    else:
+                        features = ''
+                    predict = 'P'
+                    if features == predict:
+                        pos0 -= 1
+                        self.predicted_moves[(pos0,pos1)] = predict
+                        self.move(world)
+                    elif features == '':
+                        self.best_moves[(pos0,pos1)] = features 
+                if temp_xD < length_map and temp_xD >= 0:
+                    pos1 += 1
+                    temp_xD -= 1
+                    key = (pos0, pos1)
+                    if key in world:
+                        features = world[(pos0, pos1)]
+                    else:
+                        features = ''
+                    predict = 'P'
+                    if features == predict:
+                        pos1 -= 1
+                        self.predicted_moves[(pos0,pos1)] = predict
+                        self.move(world)
+                    elif features == '':
+                        self.best_moves[(pos0,pos1)] = features
+                if temp_xU < length_map and temp_xU >= 0:
+                    pos1 -= 1
+                    temp_xU -= 1
+                    key = (pos0, pos1)
+                    if key in world:
+                        features = world[(pos0, pos1)]
+                    else:
+                        features = ''
+                    predict = 'P'
+                    if features == predict:
+                        pos1 += 1
+                        self.predicted_moves[(pos0,pos1)] = predict
+                        self.move(world)
+                    elif features == '':
+                        self.best_moves[(pos0,pos1)] = features
+                if temp_xL < length_map and temp_xL >= 0:
+                    pos0 -= 1
+                    key = (pos0, pos1)
+                    if key in world:
+                        features = world[(pos0, pos1)]
+                    else:
+                        features = ''
+                    predict = 'P'
+                    if features == predict:
+                        pos0 += 1
+                        self.predicted_moves[(pos0,pos1)] = predict
+                        self.move(world)
+                    elif features == '':
+                        self.best_moves[(pos0,pos1)] = features
+            elif features == 'S' or features == 'B/S':
+                self.predicted_moves[(pos0,pos1)] = features
+                self.best_moves[(pos0,pos1)] = features
+                if temp_xR < length_map and temp_xR >= 0:
+                    pos0 += 1
+                    temp_xR -= 1
+                    key = (pos0, pos1)
+                    if key in world:
+                        features = world[(pos0, pos1)]
+                    else:
+                        features = ''
+                    predict = 'W'
+                    if features == predict:
+                        pos0 -= 1
+                        self.predicted_moves[(pos0,pos1)] = predict
+                        self.move(world)
+                    elif features != predict and features == 'P':
+                        pos0 -= 1
+                        self.predicted_moves[(pos0,pos1)] = predict
+                        self.move(world)
+                    elif features != predict and 'G' in features:
+                        self.best_moves[(pos0,pos1)] = features
+                        self.predicted_moves[(pos0,pos1)] = features
+                        self.gold = True
+                    elif features == '':
+                        self.best_moves[(pos0,pos1)] = features
+                if temp_xD < length_map and temp_xD >= 0:
+                    pos1 += 1
+                    temp_xD -= 1
+                    key = (pos0, pos1)
+                    if key in world:
+                        features = world[(pos0, pos1)]
+                    else:
+                        features = ''
+                    predict = 'W'
+                    if features == predict:
+                        pos1 -= 1
+                        self.predicted_moves[(pos0,pos1)] = predict
+                        self.move(world)
+                    elif features != predict and features == 'P':
+                        pos1 -= 1
+                        self.predicted_moves[(pos0,pos1)] = predict
+                        self.move(world)
+                    elif features != predict and 'G' in features:
+                        self.best_moves[(pos0,pos1)] = features
+                        self.predicted_moves[(pos0,pos1)] = features
+                        self.gold = True
+                    elif features == '':
+                        self.best_moves[(pos0,pos1)] = features
+                if temp_xU < length_map and temp_xU >= 0:
+                    pos1 -= 1
+                    temp_xU -= 1
+                    key = (pos0, pos1)
+                    if key in world:
+                        features = world[(pos0, pos1)]
+                    else:
+                        features = ''
+                    predict = 'W'
+                    if features == predict:
+                        pos1 -= 1
+                        self.predicted_moves[(pos0,pos1)] = predict
+                        self.move(world)
+                    elif features != predict and features == 'P':
+                        pos1 -= 1
+                        self.predicted_moves[(pos0,pos1)] = predict
+                        self.move(world)
+                    elif features != predict and 'G' in features:
+                        self.best_moves[(pos0,pos1)] = features
+                        self.predicted_moves[(pos0,pos1)] = features
+                        self.gold = True
+                    elif features == '':
+                        self.best_moves[(pos0,pos1)] = features
+                if temp_xL < length_map and temp_xL >= 0:
+                    pos0 -= 1
+                    key = (pos0, pos1)
+                    if key in world:
+                        features = world[(pos0, pos1)]
+                    else:
+                        features = ''
+                    predict = 'W'
+                    if features == predict:
+                        pos0 += 1
+                        self.predicted_moves[(pos0,pos1)] = predict
+                        self.move(world)
+                    elif features != predict and features == 'P':
+                        pos0 += 1
+                        self.predicted_moves[(pos0,pos1)] = predict
+                        self.move(world)
+                    elif features != predict and 'G' in features:
+                        self.best_moves[(pos0,pos1)] = features
+                        self.predicted_moves[(pos0,pos1)] = features
+                        self.gold = True
+                    elif features == '':
+                        self.best_moves[(pos0,pos1)] = features
+        else:
+            features = ''
+            self.best_moves[(pos0,pos1)] = features
+                    
