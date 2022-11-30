@@ -176,7 +176,16 @@ class WWSolver:
         else:
             print("No features at " + str(x) + "," + str(y))
 
-        
+    def shoot(self, world, direction):
+      match direction:
+        case "U":
+          #Shoot up - look for Wumpus (+) to self.position[1]
+        case "D":
+          #Shoot down - look for Wumpus (-) to self.position[1]
+        case "R":
+          #Shoot right - look for Wumpus (+) to self.position[0]
+        case "L":
+          #Shoot left - look for Wumpus (-) to self.position[0]
 
     def moveRight(self, world):
         self.right = False
