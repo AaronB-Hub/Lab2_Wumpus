@@ -75,6 +75,38 @@ class WWSolver:
     self.agent = self.agent(self)
 
 
+  def killWumpus(self):
+    world = self.world
+    # This method is called if the Wumpus is shot
+    # Removes Wumpus and all stench from world
+    WS_locs = []
+    for key,val in world.items():
+        if any(("W" in feature) or ("S" in feature) for feature in val):
+          WS_locs.append(key)
+
+    for key in WS_locs:
+      if len(world[key]) == 1:
+        del world[key]
+      elif len(world[key]) == 3:
+        val = world[key]
+        val = val.replace("S", "")
+        val = val.replace("W", "")
+        val = val.replace("/", "")
+        if len(val) == 0:
+          del world[key]
+        else:
+          world[key] = val
+      else:
+        val = world[key]
+        val = val.replace("/S", "")
+        val = val.replace("S/", "")
+        val = val.replace("/W", "")
+        val = val.replace("W/", "")
+        world[key] = val
+
+    # Need to also remove Wumpus and Stench from Agent knowledge and predictions
+    #self.agent.???
+
   # This method is for checking and debugging while writing code
   def checkPrint(self):
     self.printWorldMap()
@@ -92,15 +124,16 @@ class WWSolver:
 
      # Constructor of inner class
     def __init__(self, WWSolver):
-        truemap = copy.deepcopy(WWSolver.worldmap)
+        self.WWSolver = WWSolver
+        #truemap = WWSolver.worldmap
         #print("LENGTH WorldMap" + str(len(truemap)))
         self.last_moves = {}
         self.predicted_moves = {}
         self.knowledge = {}
         self.prediction = {}
         self.best_moves = {}
-        for j in range(len(truemap)):
-            for i in range(len(truemap[j])):
+        for j in range(len(WWSolver.worldmap)):
+            for i in range(len(WWSolver.worldmap[j])):
                 self.position = [int(j), int(i)] #The position of the cell is defined here.
                 self.predict = ''
                 self.right = True
@@ -108,14 +141,15 @@ class WWSolver:
                 self.up = True
                 self.down = True
                 self.gold = False
-                self.length_map = len(copy.deepcopy(WWSolver.worldmap))
+                self.length_map = len(WWSolver.worldmap)
                 print("Start!")
-                self.checkSquare(WWSolver.world)
+                self.checkSquare()
         print("Predicted Moves: \n" + str(self.predicted_moves))
         print("Best Moves: \n" + str(self.best_moves))        
 
     # Methods of inner class
-    def checkSquare(self, world):
+    def checkSquare(self):
+        world = self.WWSolver.world
         x = self.position[0]
         y = self.position[1]
         key = (x,y)
@@ -133,12 +167,12 @@ class WWSolver:
                     self.predicted_moves[(x,y)] = features
                     if (self.right):
                         self.position[0] += 1
-                        self.start_moving(self.position[0], self.position[1], self.length_map, world)
+                        self.start_moving(self.position[0], self.position[1], self.length_map)
                     if (self.down):
                         self.position[1] += 1
-                        self.start_moving(self.position[0], self.position[1], self.length_map, world)
+                        self.start_moving(self.position[0], self.position[1], self.length_map)
                 elif x < self.length_map and y < self.length_map:
-                    self.start_moving(self.position[0], self.position[1], self.length_map, world)
+                    self.start_moving(self.position[0], self.position[1], self.length_map)
                         
                 #print("Predicted Moves: \n" + str(self.predicted_moves))
                 #print("Best Moves: \n" + str(self.best_moves))
@@ -162,12 +196,12 @@ class WWSolver:
                     self.predicted_moves[(x,y)] = features
                     if (self.right):
                         self.position[0] += 1
-                        self.start_moving(self.position[0], self.position[1], self.length_map, world)
+                        self.start_moving(self.position[0], self.position[1], self.length_map)
                     if (self.down):
                         self.position[1] += 1
-                        self.start_moving(self.position[0], self.position[1], self.length_map, world)
+                        self.start_moving(self.position[0], self.position[1], self.length_map)
                 elif x < self.length_map and y < self.length_map:
-                    self.start_moving(self.position[0], self.position[1], self.length_map, world)
+                    self.start_moving(self.position[0], self.position[1], self.length_map)
                         
                 
                 print("Features at " + str(x) + "," + str(y) + " are: " + features)
@@ -176,53 +210,87 @@ class WWSolver:
         else:
             print("No features at " + str(x) + "," + str(y))
 
-    def shoot(self, world, direction):
+    def shoot(self, direction):
+      world = self.WWSolver.world
+
+      # Get agent position
+      x = self.position[0]
+      y = self.position[1]
+
+      # Get Wumpus position
+      for key,val in world.items():
+        if any("W" in feature for feature in val):
+          W_loc_x = key[0]
+          W_loc_y = key[1]
+
+      # Check if Wumpus is shot
+      # If so, remove it and all stench from board
+      hit = False
       match direction:
         case "U":
-          #Shoot up - look for Wumpus (+) to self.position[1]
+          # Shoot up - look for Wumpus (+) to self.position[1]
+          if((y < W_loc_y) and (x == W_loc_x)):
+            hit = True
         case "D":
-          #Shoot down - look for Wumpus (-) to self.position[1]
+          # Shoot down - look for Wumpus (-) to self.position[1]
+          if((y > W_loc_y) and (x == W_loc_x)):
+            hit = True
         case "R":
-          #Shoot right - look for Wumpus (+) to self.position[0]
+          # Shoot right - look for Wumpus (+) to self.position[0]
+          if((y == W_loc_y) and (x < W_loc_x)):
+            hit = True
         case "L":
-          #Shoot left - look for Wumpus (-) to self.position[0]
+          # Shoot left - look for Wumpus (-) to self.position[0]
+          if((y == W_loc_y) and (x > W_loc_x)):
+            hit = True
 
-    def moveRight(self, world):
-        self.right = False
-        self.position[0] += 1
-        #self.checkSquare(world)
+      if hit:
+        self.WWSolver.killWumpus()
+      else:
+        print("You missed your shot!")
+
+    def moveRight(self):
+      #world = self.WWSolver.world
+      self.right = False
+      self.position[0] += 1
+      #self.checkSquare(world)
     
-    def moveLeft(self, world):
-        self.left = False
-        self.position[0] -= 1
-        #self.checkSquare(world)
+    def moveLeft(self):
+      #world = self.WWSolver.world
+      self.left = False
+      self.position[0] -= 1
+      #self.checkSquare(world)
     
-    def moveUp(self, world):
-        self.up = False
-        self.position[1] += 1
-        #self.checkSquare(world)
+    def moveUp(self):
+      #world = self.WWSolver.world
+      self.up = False
+      self.position[1] += 1
+      #self.checkSquare(world)
     
-    def moveDown(self, world):
-        self.down = False
-        self.position[1] -= 1
-        #self.checkSquare(world)
+    def moveDown(self):
+      #world = self.WWSolver.world
+      self.down = False
+      self.position[1] -= 1
+      #self.checkSquare(world)
         
-    def move(self, world):
+    def move(self):
+      #world = self.WWSolver.world
         if(self.right==False):
             self.right = True
-            self.moveLeft(world)
+            self.moveLeft()
         elif(self.left==False):
             self.left = True
-            self.moveRight(world)
+            self.moveRight()
         elif(self.up==False):
             self.up = True
-            self.MoveDown(world)
+            self.MoveDown()
         elif(self.down==False):
             self.down = True
-            self.moveUp(world)
+            self.moveUp()
             
             
-    def start_moving(self, pos0, pos1, length_map, world):
+    def start_moving(self, pos0, pos1, length_map):
+        world = self.WWSolver.world
         key = (pos0, pos1)
         if key in world:
             features = world[(pos0,pos1)]
@@ -247,7 +315,7 @@ class WWSolver:
                     if features == predict:
                         pos0 -= 1
                         self.predicted_moves[(pos0,pos1)] = predict
-                        self.move(world)
+                        self.move()
                     elif features == '':
                         self.best_moves[(pos0,pos1)] = features 
                 if temp_xD < length_map and temp_xD >= 0:
@@ -262,7 +330,7 @@ class WWSolver:
                     if features == predict:
                         pos1 -= 1
                         self.predicted_moves[(pos0,pos1)] = predict
-                        self.move(world)
+                        self.move()
                     elif features == '':
                         self.best_moves[(pos0,pos1)] = features
                 if temp_xU < length_map and temp_xU >= 0:
@@ -277,7 +345,7 @@ class WWSolver:
                     if features == predict:
                         pos1 += 1
                         self.predicted_moves[(pos0,pos1)] = predict
-                        self.move(world)
+                        self.move()
                     elif features == '':
                         self.best_moves[(pos0,pos1)] = features
                 if temp_xL < length_map and temp_xL >= 0:
@@ -291,7 +359,7 @@ class WWSolver:
                     if features == predict:
                         pos0 += 1
                         self.predicted_moves[(pos0,pos1)] = predict
-                        self.move(world)
+                        self.move()
                     elif features == '':
                         self.best_moves[(pos0,pos1)] = features
             elif features == 'S' or features == 'B/S':
@@ -309,11 +377,11 @@ class WWSolver:
                     if features == predict:
                         pos0 -= 1
                         self.predicted_moves[(pos0,pos1)] = predict
-                        self.move(world)
+                        self.move()
                     elif features != predict and features == 'P':
                         pos0 -= 1
                         self.predicted_moves[(pos0,pos1)] = predict
-                        self.move(world)
+                        self.move()
                     elif features != predict and 'G' in features:
                         self.best_moves[(pos0,pos1)] = features
                         self.predicted_moves[(pos0,pos1)] = features
@@ -332,11 +400,11 @@ class WWSolver:
                     if features == predict:
                         pos1 -= 1
                         self.predicted_moves[(pos0,pos1)] = predict
-                        self.move(world)
+                        self.move()
                     elif features != predict and features == 'P':
                         pos1 -= 1
                         self.predicted_moves[(pos0,pos1)] = predict
-                        self.move(world)
+                        self.move()
                     elif features != predict and 'G' in features:
                         self.best_moves[(pos0,pos1)] = features
                         self.predicted_moves[(pos0,pos1)] = features
@@ -355,11 +423,11 @@ class WWSolver:
                     if features == predict:
                         pos1 -= 1
                         self.predicted_moves[(pos0,pos1)] = predict
-                        self.move(world)
+                        self.move()
                     elif features != predict and features == 'P':
                         pos1 -= 1
                         self.predicted_moves[(pos0,pos1)] = predict
-                        self.move(world)
+                        self.move()
                     elif features != predict and 'G' in features:
                         self.best_moves[(pos0,pos1)] = features
                         self.predicted_moves[(pos0,pos1)] = features
@@ -377,11 +445,11 @@ class WWSolver:
                     if features == predict:
                         pos0 += 1
                         self.predicted_moves[(pos0,pos1)] = predict
-                        self.move(world)
+                        self.move()
                     elif features != predict and features == 'P':
                         pos0 += 1
                         self.predicted_moves[(pos0,pos1)] = predict
-                        self.move(world)
+                        self.move()
                     elif features != predict and 'G' in features:
                         self.best_moves[(pos0,pos1)] = features
                         self.predicted_moves[(pos0,pos1)] = features

@@ -21,3 +21,6 @@ if os.path.isfile(file_path):
 
 solver.solve()
 solver.checkPrint()
+
+#solver.killWumpus()
+#solver.checkPrint()
