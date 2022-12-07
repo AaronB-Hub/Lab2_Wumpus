@@ -145,9 +145,29 @@ class WWSolver:
                 print("Start!")
                 self.checkSquare()
         print("Predicted Moves: \n" + str(self.predicted_moves))
-        print("Best Moves: \n" + str(self.best_moves))        
+        print("Best Moves: \n" + str(self.best_moves)) 
+        self.make_move(self.best_moves)       
 
     # Methods of inner class
+    def make_move(self, best_moves):
+        world = self.WWSolver.world
+        for key,val in best_moves:
+            self.position[0] = key
+            self.position[1] = val
+            print("Agent's new position is on :" + str(key) + ", " + str(val))
+            check_key = (key, val)
+            if check_key in world:
+                feature = world[(key, val)]
+                self.shoot(key, val)
+                self.knowledge[(key,val)] = feature
+                self.prediction[(key,val)] = feature
+                if('G' in feature):
+                    print("Gold taken")
+                    break;
+
+            
+
+
     def checkSquare(self):
         world = self.WWSolver.world
         x = self.position[0]
@@ -174,18 +194,6 @@ class WWSolver:
                 elif x < self.length_map and y < self.length_map:
                     self.start_moving(self.position[0], self.position[1], self.length_map)
                         
-                #print("Predicted Moves: \n" + str(self.predicted_moves))
-                #print("Best Moves: \n" + str(self.best_moves))
-                    #print("last moves " + str(self.last_moves))    
-                        
-                    #elif features == 'P':
-                        
-                    #elif features == 'B/S':
-                        
-                    #elif features == 'W':
-                        
-                    #elif features == 'G/B':
-
             else:
                 self.knowledge[(x,y)] = features
                 self.prediction[(x,y)] = features
@@ -210,44 +218,45 @@ class WWSolver:
         else:
             print("No features at " + str(x) + "," + str(y))
 
-    def shoot(self, direction):
-      world = self.WWSolver.world
+    def shoot(self, pos_x, pos_y):
+        world = self.WWSolver.world
 
-      # Get agent position
-      x = self.position[0]
-      y = self.position[1]
+        # Get agent position
+        x = pos_x
+        y = pos_y
+        W_loc_x = -1
+        W_loc_y = -1
 
-      # Get Wumpus position
-      for key,val in world.items():
-        if any("W" in feature for feature in val):
-          W_loc_x = key[0]
-          W_loc_y = key[1]
+        # Get Wumpus position
+        for key,val in world.items():
+            if any("W" in feature for feature in val):
+                W_loc_x = key[0]
+                W_loc_y = key[1]
 
       # Check if Wumpus is shot
       # If so, remove it and all stench from board
-      hit = False
-      match direction:
-        case "U":
-          # Shoot up - look for Wumpus (+) to self.position[1]
-          if((y < W_loc_y) and (x == W_loc_x)):
-            hit = True
-        case "D":
-          # Shoot down - look for Wumpus (-) to self.position[1]
-          if((y > W_loc_y) and (x == W_loc_x)):
-            hit = True
-        case "R":
-          # Shoot right - look for Wumpus (+) to self.position[0]
-          if((y == W_loc_y) and (x < W_loc_x)):
-            hit = True
-        case "L":
-          # Shoot left - look for Wumpus (-) to self.position[0]
-          if((y == W_loc_y) and (x > W_loc_x)):
-            hit = True
+        if W_loc_x > 0 and W_loc_y > 0:
+            hit = False
+            if x == W_loc_x and y > W_loc_y:
+                # direction = 'Up'
+                hit = True
+            elif x == W_loc_x and y < W_loc_y:
+                hit = True
+                # direction = 'Down'
+            elif x > W_loc_x and y == W_loc_y:
+                hit = True
+                # direction = 'Left'
+            elif x < W_loc_x and y == W_loc_y:
+                hit = True
+                # direction = 'Right'
 
-      if hit:
-        self.WWSolver.killWumpus()
-      else:
-        print("You missed your shot!")
+            if hit:
+                self.WWSolver.killWumpus()
+                print("Shot the Wumpus")
+            else:
+                print("You missed your shot!")
+        else:
+            print("Wumpus has already been shot!!!")
 
     def moveRight(self):
       #world = self.WWSolver.world
